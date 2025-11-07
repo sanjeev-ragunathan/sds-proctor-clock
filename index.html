@@ -16,8 +16,53 @@
       font-family: monospace;
       transition: background 0.3s, color 0.3s;
     }
+    .content-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+    }
     #clock {
       font-size: 12vw;
+      text-align: center;
+    }
+    #date {
+      font-size: 3vw;
+      margin-top: 2vh;
+      opacity: 0.8;
+      text-align: center;
+    }
+    #info-box {
+      margin-top: 3vh;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    #info-text {
+      background: rgba(255, 255, 255, 0.05);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      padding: 20px;
+      font-size: 1.8vw;
+      color: inherit;
+      width: 70vw;
+      max-width: 800px;
+      min-height: 150px;
+      font-family: inherit;
+      resize: vertical;
+      outline: none;
+      transition: all 0.3s;
+      line-height: 1.6;
+      text-align: center;
+    }
+    #info-text:focus {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+    #info-text::placeholder {
+      color: rgba(255, 255, 255, 0.4);
     }
     .controls {
       position: absolute;
@@ -42,16 +87,33 @@
   </style>
 </head>
 <body>
-  <div id="clock"></div>
+  <div class="content-container">
+    <div id="clock"></div>
+    <div id="date"></div>
+    
+    <div id="info-box">
+      <textarea id="info-text" placeholder="Click to add exam details...
+• Course: 
+• Start Time: 
+• End Time: 
+• Instructions: "></textarea>
+    </div>
+  </div>
 
   <div class="controls">
     <button onclick="toggleBackground()">Toggle Background</button>
     <button onclick="toggleFormat()">Toggle 12/24 hr</button>
+    <button onclick="toggleSeconds()">Hide/Show Seconds</button>
+    <button onclick="toggleDate()">Hide/Show Date</button>
+    <button onclick="toggleInfoBox()">Hide/Show Info Box</button>
   </div>
 
   <script>
     let is24hr = true;
     let isDark = true;
+    let showSeconds = true;
+    let showDate = true;
+    let showInfoBox = true;
 
     function updateClock() {
       const now = new Date();
@@ -67,7 +129,8 @@
       const m = String(now.getMinutes()).padStart(2, '0');
       const s = String(now.getSeconds()).padStart(2, '0');
 
-      document.getElementById('clock').textContent = `${h}:${m}:${s}${suffix}`;
+      const timeDisplay = showSeconds ? `${h}:${m}:${s}` : `${h}:${m}`;
+      document.getElementById('clock').textContent = `${timeDisplay}${suffix}`;
     }
 
     function toggleBackground() {
@@ -86,8 +149,50 @@
       updateClock();
     }
 
+    function toggleSeconds() {
+      showSeconds = !showSeconds;
+      updateClock();
+    }
+
+    function updateDate() {
+      const now = new Date();
+      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      document.getElementById('date').textContent = now.toLocaleDateString(undefined, options);
+    }
+
+    function toggleDate() {
+      showDate = !showDate;
+      document.getElementById('date').style.display = showDate ? 'block' : 'none';
+    }
+
+    function toggleInfoBox() {
+      showInfoBox = !showInfoBox;
+      document.getElementById('info-box').style.display = showInfoBox ? 'flex' : 'none';
+    }
+
+    // Load and save info text from localStorage
+    function loadInfoText() {
+      const saved = localStorage.getItem('sds-clock-info');
+      if (saved) {
+        document.getElementById('info-text').value = saved;
+      }
+    }
+
+    function saveInfoText() {
+      const text = document.getElementById('info-text').value;
+      localStorage.setItem('sds-clock-info', text);
+    }
+
+    // Auto-save when typing
+    document.addEventListener('DOMContentLoaded', function() {
+      loadInfoText();
+      document.getElementById('info-text').addEventListener('input', saveInfoText);
+    });
+
     setInterval(updateClock, 1000);
     updateClock();
+    updateDate();
+    loadInfoText();
   </script>
 </body>
 </html>
