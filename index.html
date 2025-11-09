@@ -89,6 +89,7 @@
     }
     #info-text::placeholder {
       color: rgba(255, 255, 255, 0.4);
+      font-size: 1.2vw;
     }
     body[style*="background: white"] #info-text {
       background: transparent;
@@ -100,6 +101,7 @@
     }
     body[style*="background: white"] #info-text::placeholder {
       color: rgba(0, 0, 0, 0.4);
+      font-size: 1.2vw;
     }
     .menu-container {
       position: fixed;
@@ -192,7 +194,9 @@
 • Course: 
 • Start Time: 
 • End Time: 
-• Instructions: "></textarea>
+• Instructions: 
+
+(Drag bottom-right corner to adjust box size)"></textarea>
       <div class="text-controls">
         <button onclick="changeFontSize('increase')">A+</button>
         <button onclick="changeFontSize('decrease')">A-</button>
@@ -213,6 +217,7 @@
       <button onclick="toggleSeconds()">Hide/Show Seconds</button>
       <button onclick="toggleDate()">Hide/Show Date</button>
       <button onclick="toggleInfoBox()">Hide/Show Info Box</button>
+      <button onclick="openGitHub()">Need Help?</button>
     </div>
   </div>
 
@@ -297,6 +302,11 @@
       const menuButton = document.querySelector('.menu-button');
       menu.classList.toggle('open');
       menuButton.classList.toggle('active');
+    }
+
+    function openGitHub() {
+      window.open('https://github.com/sanjeev-rm/SDS-Proctor-Clock', '_blank');
+      closeMenu();
     }
 
     // Close menu when clicking outside
