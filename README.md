@@ -1,2 +1,2 @@
 # SDS-Proctor-Clock
-A full screen clock for exams without ads
+A full screen clock without ads
