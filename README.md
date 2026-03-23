@@ -1,4 +1,4 @@
-# SDS-Proctor-Clock
+# SDS Proctor Clock
 
 A clean, distraction-free full-screen clock for proctoring exams.
 - no more ads
