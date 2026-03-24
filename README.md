@@ -6,7 +6,7 @@ A clean, distraction-free full-screen clock for proctoring exams.
 - no more distractions
 - one link, one website, one place
 
-**[🌐 Open SDS-Proctor-Clock →](https://sanjeev-rm.github.io/SDS-Proctor-Clock/)**
+**[🌐 Open SDS-Proctor-Clock →](https://sanjeev-ragunathan.github.io/SDS-Proctor-Clock/)**
 
 
 ![Guide](guide.jpg)
