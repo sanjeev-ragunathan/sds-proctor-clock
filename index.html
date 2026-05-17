@@ -41,6 +41,39 @@
       justify-content: center;
       align-items: center;
     }
+    #resize-bar {
+      width: 80vw;
+      height: 28px;
+      cursor: grab;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      margin-top: 4px;
+      flex-shrink: 0;
+      user-select: none;
+    }
+    #resize-bar.dragging {
+      cursor: grabbing;
+    }
+    #info-box:hover #resize-bar {
+      opacity: 0.4;
+      pointer-events: auto;
+    }
+    #info-box:hover #resize-bar.visible {
+      opacity: 1;
+    }
+    #resize-bar::before {
+      content: '';
+      width: 48px;
+      height: 4px;
+      border-radius: 2px;
+      background: rgba(255,255,255,0.35);
+    }
+    body[style*="background: white"] #resize-bar::before {
+      background: rgba(0,0,0,0.25);
+    }
     .text-controls {
       display: flex;
       gap: 8px;
@@ -73,15 +106,15 @@
       padding: 20px;
       font-size: 1.8vw;
       color: inherit;
-      width: 70vw;
-      max-width: 800px;
-      min-height: 150px;
+      width: 80vw;
       font-family: inherit;
-      resize: vertical;
+      resize: none;
+      overflow: hidden;
       outline: none;
-      transition: all 0.3s;
+      transition: background 0.3s, border-color 0.3s;
       line-height: 1.6;
       text-align: center;
+      will-change: height;
     }
     #info-text:focus {
       background: rgba(255, 255, 255, 0.15);
@@ -190,12 +223,8 @@
     <div id="date"></div>
     
     <div id="info-box">
-      <textarea id="info-text" placeholder="Click to add exam details...
-• Course: 
-• Start Time: 
-• End Time: 
-• Instructions: 
-(Drag bottom-right corner to adjust box size)"></textarea>
+      <textarea id="info-text" placeholder="Click to edit exam details..."></textarea>
+      <div id="resize-bar"></div>
       <div class="text-controls">
         <button onclick="changeFontSize('increase')">A+</button>
         <button onclick="changeFontSize('decrease')">A-</button>
@@ -209,7 +238,7 @@
 
   <div class="menu-container">
     <button class="menu-button" onclick="toggleMenu()">☰</button>
-    
+
     <div class="controls" id="menu">
       <button onclick="toggleBackground()">Toggle Background</button>
       <button onclick="toggleFormat()">Toggle 12/24 hr</button>
@@ -221,13 +250,22 @@
   </div>
 
   <script>
-    let is24hr = true;
+    let is24hr = false;
     let isDark = true;
     let showSeconds = true;
     let showDate = true;
     let showInfoBox = true;
     let infoFontSize = 1.8;
     let isBold = false;
+
+    const DEFAULT_INFO_TEXT = `EXAMPLE 0000
+start: 0:00 pm
+end:   0:00 pm (50% extra)
+       0:00 pm (100% extra)
+
+-> Please check in at the front desk before starting the exam.
+-> NO CALCULATORS, NO OUTSIDE MATERIALS.
+-> If you need to use the restroom, please leave your ID and phone at the front desk before you go.`;
 
     function updateClock() {
       const now = new Date();
@@ -263,17 +301,20 @@
         document.body.style.background = "white";
         document.body.style.color = "black";
       }
+      localStorage.setItem('sds-clock-dark-mode', isDark);
       closeMenu();
     }
 
     function toggleFormat() {
       is24hr = !is24hr;
+      localStorage.setItem('sds-clock-24hr', is24hr);
       updateClock();
       closeMenu();
     }
 
     function toggleSeconds() {
       showSeconds = !showSeconds;
+      localStorage.setItem('sds-clock-show-seconds', showSeconds);
       updateClock();
       closeMenu();
     }
@@ -286,12 +327,14 @@
 
     function toggleDate() {
       showDate = !showDate;
+      localStorage.setItem('sds-clock-show-date', showDate);
       document.getElementById('date').style.display = showDate ? 'block' : 'none';
       closeMenu();
     }
 
     function toggleInfoBox() {
       showInfoBox = !showInfoBox;
+      localStorage.setItem('sds-clock-show-info-box', showInfoBox);
       document.getElementById('info-box').style.display = showInfoBox ? 'flex' : 'none';
       closeMenu();
     }
@@ -308,7 +351,6 @@
       closeMenu();
     }
 
-    // Close menu when clicking outside
     document.addEventListener('click', function(event) {
       const menu = document.getElementById('menu');
       const menuButton = document.querySelector('.menu-button');
@@ -317,20 +359,65 @@
       }
     });
 
-    // Load and save info text from localStorage
-    function loadInfoText() {
-      const saved = localStorage.getItem('sds-clock-info');
-      if (saved) {
-        document.getElementById('info-text').value = saved;
-      }
+    function autoResize(el) {
+      const topOfBox = el.getBoundingClientRect().top;
+      el.style.height = '1px';
+      const scrollHeight = el.scrollHeight;
+      const bottomPadding = 10;
+      const viewportMax = window.innerHeight - topOfBox - bottomPadding;
+      const targetHeight = Math.min(scrollHeight, viewportMax);
+      el.style.height = targetHeight + 'px';
+      const overflowing = scrollHeight > targetHeight;
+      el.style.overflowY = overflowing ? 'auto' : 'hidden';
+      document.getElementById('resize-bar').classList.toggle('visible', overflowing);
     }
+
+    // Drag bar — allows both growing and shrinking
+    (function () {
+      let dragging = false, startY = 0, startHeight = 0;
+      const bar = document.getElementById('resize-bar');
+      const textBox = document.getElementById('info-text');
+      const MIN_HEIGHT = 60;
+
+      function onStart(y) {
+        dragging = true;
+        startY = y;
+        startHeight = textBox.offsetHeight;
+        document.body.style.userSelect = 'none';
+        bar.classList.add('dragging');
+      }
+      function onMove(y) {
+        if (!dragging) return;
+        const topOfBox = textBox.getBoundingClientRect().top;
+        const bottomPadding = 10;
+        const viewportMax = window.innerHeight - topOfBox - bottomPadding;
+        const newHeight = Math.max(MIN_HEIGHT, Math.min(startHeight + (y - startY), viewportMax));
+        textBox.style.height = newHeight + 'px';
+        const overflowing = textBox.scrollHeight > newHeight;
+        textBox.style.overflowY = overflowing ? 'auto' : 'hidden';
+        bar.classList.toggle('visible', overflowing);
+      }
+      function onEnd() {
+        dragging = false;
+        document.body.style.userSelect = '';
+        bar.classList.remove('dragging');
+      }
+
+      bar.addEventListener('mousedown', e => { onStart(e.clientY); e.preventDefault(); });
+      document.addEventListener('mousemove', e => onMove(e.clientY));
+      document.addEventListener('mouseup', onEnd);
+
+      bar.addEventListener('touchstart', e => { onStart(e.touches[0].clientY); e.preventDefault(); }, { passive: false });
+      document.addEventListener('touchmove', e => { if (dragging) { onMove(e.touches[0].clientY); e.preventDefault(); } }, { passive: false });
+      document.addEventListener('touchend', onEnd);
+    })();
 
     function saveInfoText() {
-      const text = document.getElementById('info-text').value;
-      localStorage.setItem('sds-clock-info', text);
+      const textBox = document.getElementById('info-text');
+      localStorage.setItem('sds-clock-info', textBox.value);
+      autoResize(textBox);
     }
 
-    // Text formatting functions
     function changeFontSize(action) {
       const textBox = document.getElementById('info-text');
       if (action === 'increase' && infoFontSize < 3) {
@@ -340,6 +427,7 @@
       }
       textBox.style.fontSize = infoFontSize + 'vw';
       localStorage.setItem('sds-clock-font-size', infoFontSize);
+      autoResize(textBox);
     }
 
     function changeAlignment(align) {
@@ -360,7 +448,7 @@
       const savedSize = localStorage.getItem('sds-clock-font-size');
       const savedAlign = localStorage.getItem('sds-clock-text-align');
       const savedBold = localStorage.getItem('sds-clock-bold');
-      
+
       if (savedSize) {
         infoFontSize = parseFloat(savedSize);
         textBox.style.fontSize = infoFontSize + 'vw';
@@ -374,18 +462,58 @@
       }
     }
 
-    // Auto-save when typing
+    function loadPersistentState() {
+      const savedDarkMode = localStorage.getItem('sds-clock-dark-mode');
+      const saved24hr = localStorage.getItem('sds-clock-24hr');
+      const savedShowSeconds = localStorage.getItem('sds-clock-show-seconds');
+      const savedShowDate = localStorage.getItem('sds-clock-show-date');
+      const savedShowInfoBox = localStorage.getItem('sds-clock-show-info-box');
+      const savedInfoText = localStorage.getItem('sds-clock-info');
+
+      if (savedDarkMode !== null) {
+        isDark = savedDarkMode === 'true';
+        if (isDark) {
+          document.body.style.background = "black";
+          document.body.style.color = "white";
+        } else {
+          document.body.style.background = "white";
+          document.body.style.color = "black";
+        }
+      }
+
+      if (saved24hr !== null) {
+        is24hr = saved24hr === 'true';
+      }
+
+      if (savedShowSeconds !== null) {
+        showSeconds = savedShowSeconds === 'true';
+      }
+
+      if (savedShowDate !== null) {
+        showDate = savedShowDate === 'true';
+        document.getElementById('date').style.display = showDate ? 'block' : 'none';
+      }
+
+      if (savedShowInfoBox !== null) {
+        showInfoBox = savedShowInfoBox === 'true';
+        document.getElementById('info-box').style.display = showInfoBox ? 'flex' : 'none';
+      }
+
+      const textBox = document.getElementById('info-text');
+      textBox.value = savedInfoText || DEFAULT_INFO_TEXT;
+      autoResize(textBox);
+    }
+
+    loadPersistentState();
+    loadFormatting();
+
     document.addEventListener('DOMContentLoaded', function() {
-      loadInfoText();
-      loadFormatting();
       document.getElementById('info-text').addEventListener('input', saveInfoText);
     });
 
     setInterval(updateClock, 1000);
     updateClock();
     updateDate();
-    loadInfoText();
-    loadFormatting();
   </script>
 </body>
 </html>
