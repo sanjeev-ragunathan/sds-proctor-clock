@@ -322,14 +322,6 @@
       }
     });
 
-    // Load and save info text from localStorage
-    function loadInfoText() {
-      const saved = localStorage.getItem('sds-clock-info');
-      if (saved) {
-        document.getElementById('info-text').value = saved;
-      }
-    }
-
     function saveInfoText() {
       const text = document.getElementById('info-text').value;
       localStorage.setItem('sds-clock-info', text);
@@ -379,12 +371,13 @@
       }
     }
 
-    function loadSettings() {
+    function loadPersistentState() {
       const savedDarkMode = localStorage.getItem('sds-clock-dark-mode');
       const saved24hr = localStorage.getItem('sds-clock-24hr');
       const savedShowSeconds = localStorage.getItem('sds-clock-show-seconds');
       const savedShowDate = localStorage.getItem('sds-clock-show-date');
       const savedShowInfoBox = localStorage.getItem('sds-clock-show-info-box');
+      const savedInfoText = localStorage.getItem('sds-clock-info');
 
       if (savedDarkMode !== null) {
         isDark = savedDarkMode === 'true';
@@ -414,12 +407,15 @@
         showInfoBox = savedShowInfoBox === 'true';
         document.getElementById('info-box').style.display = showInfoBox ? 'flex' : 'none';
       }
+
+      if (savedInfoText) {
+        document.getElementById('info-text').value = savedInfoText;
+      }
     }
 
     // Auto-save when typing
     document.addEventListener('DOMContentLoaded', function() {
-      loadSettings();
-      loadInfoText();
+      loadPersistentState();
       loadFormatting();
       document.getElementById('info-text').addEventListener('input', saveInfoText);
     });
@@ -427,8 +423,7 @@
     setInterval(updateClock, 1000);
     updateClock();
     updateDate();
-    loadSettings();
-    loadInfoText();
+    loadPersistentState();
     loadFormatting();
   </script>
 </body>
