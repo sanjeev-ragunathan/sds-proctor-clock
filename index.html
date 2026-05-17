@@ -263,17 +263,20 @@
         document.body.style.background = "white";
         document.body.style.color = "black";
       }
+      localStorage.setItem('sds-clock-dark-mode', isDark);
       closeMenu();
     }
 
     function toggleFormat() {
       is24hr = !is24hr;
+      localStorage.setItem('sds-clock-24hr', is24hr);
       updateClock();
       closeMenu();
     }
 
     function toggleSeconds() {
       showSeconds = !showSeconds;
+      localStorage.setItem('sds-clock-show-seconds', showSeconds);
       updateClock();
       closeMenu();
     }
@@ -286,12 +289,14 @@
 
     function toggleDate() {
       showDate = !showDate;
+      localStorage.setItem('sds-clock-show-date', showDate);
       document.getElementById('date').style.display = showDate ? 'block' : 'none';
       closeMenu();
     }
 
     function toggleInfoBox() {
       showInfoBox = !showInfoBox;
+      localStorage.setItem('sds-clock-show-info-box', showInfoBox);
       document.getElementById('info-box').style.display = showInfoBox ? 'flex' : 'none';
       closeMenu();
     }
@@ -360,7 +365,7 @@
       const savedSize = localStorage.getItem('sds-clock-font-size');
       const savedAlign = localStorage.getItem('sds-clock-text-align');
       const savedBold = localStorage.getItem('sds-clock-bold');
-      
+
       if (savedSize) {
         infoFontSize = parseFloat(savedSize);
         textBox.style.fontSize = infoFontSize + 'vw';
@@ -374,8 +379,46 @@
       }
     }
 
+    function loadSettings() {
+      const savedDarkMode = localStorage.getItem('sds-clock-dark-mode');
+      const saved24hr = localStorage.getItem('sds-clock-24hr');
+      const savedShowSeconds = localStorage.getItem('sds-clock-show-seconds');
+      const savedShowDate = localStorage.getItem('sds-clock-show-date');
+      const savedShowInfoBox = localStorage.getItem('sds-clock-show-info-box');
+
+      if (savedDarkMode !== null) {
+        isDark = savedDarkMode === 'true';
+        if (isDark) {
+          document.body.style.background = "black";
+          document.body.style.color = "white";
+        } else {
+          document.body.style.background = "white";
+          document.body.style.color = "black";
+        }
+      }
+
+      if (saved24hr !== null) {
+        is24hr = saved24hr === 'true';
+      }
+
+      if (savedShowSeconds !== null) {
+        showSeconds = savedShowSeconds === 'true';
+      }
+
+      if (savedShowDate !== null) {
+        showDate = savedShowDate === 'true';
+        document.getElementById('date').style.display = showDate ? 'block' : 'none';
+      }
+
+      if (savedShowInfoBox !== null) {
+        showInfoBox = savedShowInfoBox === 'true';
+        document.getElementById('info-box').style.display = showInfoBox ? 'flex' : 'none';
+      }
+    }
+
     // Auto-save when typing
     document.addEventListener('DOMContentLoaded', function() {
+      loadSettings();
       loadInfoText();
       loadFormatting();
       document.getElementById('info-text').addEventListener('input', saveInfoText);
@@ -384,6 +427,7 @@
     setInterval(updateClock, 1000);
     updateClock();
     updateDate();
+    loadSettings();
     loadInfoText();
     loadFormatting();
   </script>
