@@ -9,4 +9,4 @@ A clean, distraction-free full-screen clock for proctoring exams.
 **[🌐 Open SDS-Proctor-Clock →](https://sanjeev-ragunathan.github.io/sds-proctor-clock/)**
 
 
-![Guide](guide.jpg)
+![Guide](./images/guide.jpg)
